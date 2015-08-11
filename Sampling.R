@@ -1,3 +1,5 @@
+# Sampling.R
+
 library(MASS)
 library(parallel)
 library(ggplot2)
@@ -33,8 +35,8 @@ grid_runner <- function(grid, B) {
 	df
 }
 
-nrange <- seq(6, 20, 2)
-prange <- c(seq(.1, .9, .05))
+nrange <- seq(2, 15, 1)
+prange <- c(seq(.4, .6, .05))
 allgrid <- expand.grid(nrange, prange)
 B <- 10000 # 46 seconds
 
