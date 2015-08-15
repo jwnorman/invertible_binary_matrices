@@ -20,7 +20,7 @@ source("multiplot.R")
 ```
 
 ### Introduction
-Binary matrices occur in application quite often. Two examples of binary matrices that are quite common are permutation matrices and adjacency matrices. Being approached by this problem of determining or estimating the proportion of binary matrices that are invertible for different matrix sizes, I was surprised to learn that there isn't already a known relationship between the number of unique binary matrices and the number of those that are invertibles. In other words, at first glance, it doesn't seem like the proportion of invertible matrices would be a mystery.
+Binary matrices occur in application quite often. Two examples of binary matrices that are quite common are permutation matrices and adjacency matrices. Being approached by this problem of determining or estimating the proportion of binary matrices that are invertible for different matrix sizes, I was surprised to learn that there isn't already a known relationship between the number of unique binary matrices and the number of those that are invertible. In other words, at first glance, it doesn't seem like the proportion of invertible matrices would be a mystery.
 
 Approaching this problem both from the brute force perspective and the sampling perspective really intrigued me. For the brute force method, the value that attain is the exact proportion. Something about knowing the exact proportion almost seems magical, as if it's part of the answer to life!
 
@@ -57,9 +57,9 @@ invertible_info <- data.frame(n = c(2, 3, 4, 5),
 kable(invertible_info, row.names = FALSE, align = 'l', format = 'markdown')
 ```
 
-As one can see, while I am able to obtain these "magical" numbers of .375, .33984375, .34423828125, and .372955799103, I run in a barrier extremely quickly. The number of unique matrices explodes at a rate of `2**n**2`, i.e. from 16 to 512 to 65,536 to 33,554,432 different matrices! For the 5x5 matrix, my program took almost eleven minutes to complete. I wanted to figure out, using the same brute force method as above, how long my program would expect to take calculating all the 6x6 matrices. And 7x7 matrices? 
+As one can see, while I am able to obtain these "magical" numbers of .375, .33984375, .34423828125, and .372955799103, I run in a barrier extremely quickly. The number of unique matrices explodes at a rate of `2**n**2`, i.e. from 16 to 512 to 65,536 to 33,554,432 different matrices! For the 5x5 matrix, my program took almost eleven minutes to complete. I wanted to figure out, using the same brute force method as above, how long my program would expect to take calculating all the 6x6 matrices.
 
-To do this, I looked at the relationship between the `Num_Unique_Matrices` and `Seconds_to_Complete` numbers in the table above. After trying out a few transformations to see what kind of relationship existed between the two, I came across a nearly perfect fit: The `log(Seconds_to_Complete)` as a function of `log(Num_Unique_Matrices)`, seen in the plot below.
+To do this, I looked at the relationship between the `Num_Unique_Matrices` and `Seconds_to_Complete` numbers in the table above. After trying out a few transformations to see what kind of relationship existed between the two, I came across a nearly perfect fit (R^2 = .9995): The `log(Seconds_to_Complete)` as a function of `log(Num_Unique_Matrices)`, seen in the plot below. 
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.height = 5, fig.width = 6}
 nums = invertible_info$Num_Unique_Matrices
@@ -73,7 +73,7 @@ p <- ggplot() + geom_point(aes(x = log(nums), y = log(secs), size = 3)) +
 p
 ```
 
-In order to calculate an estimate of how long this program would run for 6x6, I can use the formula, attained from `lm()` in R, `log(# of Seconds) = .98968 * log(# of Unique Matrices) - 10.71259`. Of course, this will be extrapolating from the best fit line, so I will have to be careful. But because the R^2 value is so extreme (.9995), I expect the line will persist. The expected number of seconds according to this fitted linear model of the transformed independent and dependent variables for a 6x6 matrix is 1,182,684 which is over 13 days of nonstop running of this program. 
+In order to calculate an estimate of how long this program would run for 6x6, I can use the formula, attained from `lm()` in R, `log(# of Seconds) = .98968 * log(# of Unique Matrices) - 10.71259`. Of course, this will be extrapolating from the best fit line, so I won't treat the result of this predicted value as guaranteed. The expected number of seconds according to this fitted linear model of the transformed independent and dependent variables for a 6x6 matrix is 1,182,684 seconds which is over 13 days of nonstop running of this program.
 
 At this point, what appealed to me was coming up with an algorithm that comes up with an estimate for the proportion of matrices that invertible for a given size, n, and a given bias towards picking a 0, p. I used R for my sampling algorithm.
 
@@ -152,7 +152,7 @@ grid_runner <- function(grid, B) {
 
 ```
 
-The functions above create binary matrices with a given size of n, the size of the matrix, and p, the bias. This is done a specified B number of times for every combinatino of n and p. I ran simulations for 551 different combinations of n and p. For n, I used the values 2 through 30, and for p, I used the values .05 to .95. I omitted probabilities 0 and 1 because those matrices will never be invertible due to linear dependence (every row/column will be all zeros or all ones). After running B = 10,000 iterations for all 551 of these scenarios, I produced the following plot.
+The functions above create binary matrices with a given size of n, the size of the matrix, and p, the bias. This is done a specified B number of times for every combination of n and p. I ran simulations for 551 different combinations of n and p. For n, I used the values 2 through 30, and for p, I used the values .05 to .95. I omitted probabilities 0 and 1 because those matrices will never be invertible due to linear dependence (every row/column will be all zeros or all ones). After running B = 10,000 iterations for all 551 of these scenarios, I produced the following plot.
 
 ```{r, echo = FALSE, message = FALSE, warning = FALSE, fig.height = 5, fig.width = 6, fig.align = "center"}
 load(file = "grid_sol_2_30_1_05_95_05_10000.Rda")
@@ -167,12 +167,15 @@ p <- ggplot() +
 	xlab("Bias") +
 	ylab("Proportion Invertible") +
 	scale_x_continuous(breaks = seq(0, 1, .1)) + 
+	guides(col = guide_legend(ncol = 2)) +
 	scale_colour_discrete(name = "n")
 
 p
 ```
 
-In the plot above, the mode of each distribution is clearly at or very near to .5. This intuitively makes sense because it means the matrices produced are least likely to duplicate rows/columns. The mode being near .5 is true for all sizes of n except for n = 2, 3, and 4. Also, notice that as n increases in size, the higher the proportion of the sampled matrices are invertible. Again, this makes sense intuitively because with larger rows, there is less of a chance of obtaining a linear combination of another row. At the maximum of the very large matrices, the plot shows the proportion of invertibility is greater than one, but this is simply due to the smoothing error of this density plot.
+In the plot above, the mode of each distribution is clearly at or very near to .5. This intuitively makes sense because it means the matrices produced are least likely to duplicate rows/columns. But interestingly, the modes aren't exactly at .5. It appears that as the matrix size increases, the distribution becomes more and more symmetrical. But when n is smaller, the mode lies to the left of .5. Since the bias denotes the probability of each value in the matrix being a zero, this implies that as the matrix size is relatively small, the matrices with more ones are more likely invertible.
+
+Also, notice that as n increases in size, the higher the proportion of the sampled matrices are invertible. Again, this makes sense intuitively because with larger rows, there is less of a chance of obtaining a linear combination of another row. At the maximum of the very large matrices, the plot shows the proportion of invertibility is greater than one, but this is simply due to the error of this smoothing plot.
 
 One interesting pattern in the graph above is if you look at the height differences between distributions when the bias is 0.5. As n enlarges from 5 to 10, the difference increases, and as n continues to enlarge from 10 and on, the difference decreases. In other words, the rate at which the proportion of invertibility increases as n increases is variable!
 
@@ -187,6 +190,7 @@ q <- ggplot() +
 	xlab("Size of Matrix") +
 	ylab("Proportion Invertible") +
 	coord_cartesian(xlim = c(2, 25)) +
+	guides(col = guide_legend(ncol = 2)) +
 	scale_x_continuous(breaks = seq(2, 24, 2)) + 
 	scale_colour_discrete(name = "Bias")
 
@@ -211,3 +215,8 @@ s <- ggplot() +
 
 s
 ```
+
+The sweeping motion mentioned above is very apparent here. As the bias approaches .5 from either side, the maximum slope of the line occurs at smaller and smaller values of n. Even the matrices that were generated with biases of .1 and .9 begin to show. But notice again that .1 and .9 don't follow the same shape: The matrix with .1 bias begins to increase before .9 does. This again implies that a matrix with more ones is more likely to be invertible.
+
+### Conclusion
+The finding that surprised me the most while exploring binary matrices, is that the invertibility of a matrix as a function of its bias, the proportion of zeros that occur in the matrix, is not symmetric around .5! I intuited that the percentage of the matrix that are zeros would yield the same amount of invertible matrices as ones would, but this is actually not true. Clearly though, as the matrix size increases, this has less and less of an effect.
